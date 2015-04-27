@@ -39,7 +39,7 @@ return [
 	|
 	*/
 
-	'timezone' => 'UTC',
+	'timezone' => 'Europe/Istanbul',
 
 	/*
 	|--------------------------------------------------------------------------
@@ -139,11 +139,11 @@ return [
 		/*
 		 * Application Service Providers...
 		 */
-		'App\Providers\AppServiceProvider',
-		'App\Providers\BusServiceProvider',
-		'App\Providers\ConfigServiceProvider',
-		'App\Providers\EventServiceProvider',
-		'App\Providers\RouteServiceProvider',
+		'Chat\Providers\AppServiceProvider',
+		'Chat\Providers\BusServiceProvider',
+		'Chat\Providers\ConfigServiceProvider',
+		'Chat\Providers\EventServiceProvider',
+		'Chat\Providers\RouteServiceProvider',
 
 	],
 

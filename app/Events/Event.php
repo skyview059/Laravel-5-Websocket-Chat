@@ -1,4 +1,4 @@
-<?php namespace App\Events;
+<?php namespace Chat\Events;
 
 abstract class Event {
 

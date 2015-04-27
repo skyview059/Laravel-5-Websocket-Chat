@@ -1,4 +1,4 @@
-<?php namespace App\Commands;
+<?php namespace Chat\Commands;
 
 abstract class Command {
 
