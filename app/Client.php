@@ -16,4 +16,11 @@ class Client
   {
     return isset($this->user);
   }
+
+  public function send( $data )
+  {
+    if (is_array($data))
+      $data = json_encode($data);
+    $this->socket->send( $data );
+  }
 }

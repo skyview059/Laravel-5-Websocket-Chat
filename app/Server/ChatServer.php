@@ -37,6 +37,9 @@ class ChatServer implements MessageComponentInterface
     $this->clients->attach($client);
 
     $this->console("Yeni bağlantı! ({$socket->resourceId})");
+
+    // Yeni kullanıcı listesini gönder
+    $this->sendUsersList();
   }
 
   /*
@@ -61,9 +64,15 @@ class ChatServer implements MessageComponentInterface
       case 'login':
         $this->console("Login mesajı geldi.", "comment");
         try {
+          // user'ı bul
           $user = User::findOrFail($msg->data->user_id);
           $sender->user = $user;
+          $sender->user->setOnline();
           $this->console("User {$user->name} bağlandı.");
+
+          // bağlı kullanıcıların listesini gönder
+          $this->sendUsersList();
+
         } catch (Exception $e) {
           $this->console("User bulunamadı", "error");
         }
@@ -74,7 +83,7 @@ class ChatServer implements MessageComponentInterface
         // login olmuş kullanıcılara gelen mesajı ilet
         foreach ($this->clients as $client) {
           if ($client->isLoggedIn())
-            $client->socket->send( $data );
+            $client->send( $data );
         }
         break;
       
@@ -90,11 +99,17 @@ class ChatServer implements MessageComponentInterface
   */
   public function onClose(ConnectionInterface $socket) {
     // Bağlantı kesildiğinden kullanıcıyı listeden çıkarabiliriz.
-    $user = $this->findClientByConnection($socket);
-    if ($user) {
-      $this->clients->detach($user);
+    $client = $this->findClientByConnection($socket);
+    if ($client) {
+      if ($client->isLoggedIn()) {
+        $client->user->setOffline();
+      }
+      $this->clients->detach($client);
       $this->console("Bağlantı {$socket->resourceId} çıkış yaptı.", "error");
     }
+
+    // Yeni kullanıcı listesini gönder
+    $this->sendUsersList();
   }
 
   /*
@@ -119,5 +134,27 @@ class ChatServer implements MessageComponentInterface
       if ($client->socket == $socket)
         return $client;
     return null;
+  }
+
+  public function sendUsersList( $to = null )
+  {
+    $users = User::orderBy('status', 'desc')->orderBy('name', 'asc')->get();
+    
+    $message['topic'] = 'users';
+    foreach ($users as $user) {
+      $message['data']['users'][] = $user;
+    }
+
+    if ($to)
+      $to->send( $message );
+    else{
+      // herkese gonder
+      $this->console( "Herkese gönderiliyor !!" , "error" );
+      foreach ($this->clients as $client) {
+        if ($client->isLoggedIn())
+          $client->send( $message );
+      }
+    }
+
   }
 }

@@ -11,7 +11,29 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	use Authenticatable, CanResetPassword;
 
 	protected $table = 'users';
-	protected $fillable = ['name', 'email', 'password'];
+	protected $fillable = ['name', 'email', 'password', 'status'];
 	protected $hidden = ['password', 'remember_token'];
+
+  public function setOnline()
+  {
+    $this->status = 1;
+    $this->save();
+  }
+
+  public function setOffline()
+  {
+    $this->status = 0;
+    $this->save();
+  }
+
+  public function getIsOnlineAttribute()
+  {
+    return (bool) $this->status;
+  }
+
+  public function getIsOfflineAttribute()
+  {
+    return ! $this->is_online;
+  }
 
 }

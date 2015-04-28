@@ -8,6 +8,7 @@ use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use Chat\Server\ChatServer;
+use Chat\User;
 
 class Start extends Command {
 
@@ -21,6 +22,9 @@ class Start extends Command {
 
   public function fire()
   {
+    // Tüm userları offline yap.
+    User::where('status', 1)->update(['status'=>0]);
+
     // Websocket Serverını Çalıştır
     $server = IoServer::factory(
       new HttpServer(

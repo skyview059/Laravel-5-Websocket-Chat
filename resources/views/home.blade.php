@@ -25,12 +25,8 @@
 		</div><!-- .col-9 -->
 		<div class="col-xs-3">
 			<div id="active-users">
-				<ul class="list-group">
-					<li class="list-group-item">Item 1</li>
-					<li class="list-group-item">Item 2</li>
-					<li class="list-group-item">Item 3</li>
-				</ul>
-			</div>
+				<ul class="list-group"></ul>
+			</div><!-- .active-userss -->
 		</div><!-- .col-3 -->
 	</div><!-- .row -->
 </div><!-- .container -->

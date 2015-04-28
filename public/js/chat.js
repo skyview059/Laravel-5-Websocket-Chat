@@ -3,7 +3,7 @@
 | Chat Client
 |--------------------------
 */
-var chat = {
+var Chat = {
   // degiskenler
   user_id: null,
 
@@ -19,7 +19,7 @@ var chat = {
     // Enter'a basıldığında mesaj gönder
     $("#message").on("keydown", function(event){
       if (event.keyCode == 13)
-        chat.send();
+        Chat.send();
     });
   },
 
@@ -44,7 +44,7 @@ var chat = {
     // mesaj parametre olarak girilmemişse input'dan al
     if (!message) {
       message = $("#message").val();
-      chat.clearInput();
+      Chat.clearInput();
     }
     
     // mesaj yoksa iptal et
@@ -54,11 +54,11 @@ var chat = {
     message = {
       topic: 'message',
       data: {
-        sender: chat.user_id,
+        sender: Chat.user_id,
         content: message
       }
     }
-    websocket.send( message );
+    Websocket.send( message );
   },
 
   // input'daki mesajı temizle
@@ -72,17 +72,17 @@ var chat = {
     var message = {
       'topic': 'login',
       'data': {
-        'user_id': chat.user_id
+        'user_id': Chat.user_id
       },
     }
-    websocket.send( message );
+    Websocket.send( message );
 
-    chat.log("Bağlanıldı !");
+    Chat.log("Bağlanıldı !");
   },
 
   // server ile bağlantı koptuğunda
   onDisconnect: function(event){
-    chat.log("Bağlantı kesildi !");
+    Chat.log("Bağlantı kesildi !");
   },
 
   // serverdan mesaj geldiğinde
@@ -92,12 +92,19 @@ var chat = {
     switch(message.topic) {
       // kullanıcıdan mesaj var
       case 'message':
-        this.log( message.data.content, message.data.sender );
+        var sender = UserList.getUserById( message.data.sender );
+        console.log(sender);
+
+        if (!sender) sender = message.data.sender;
+        else sender = sender.name;
+
+        this.log( message.data.content, sender );
         break;
 
-      // giriş reddedildi mesajı
-      case 'denied':
-        this.log( message.data.content );
+      // kullanıcı listesini al
+      case 'users':
+        UserList.init( message.data.users );
+        break;
 
       default:
         break;
@@ -115,24 +122,71 @@ var chat = {
 | Websocket
 |--------------------------
 */
-var websocket = {
+var Websocket = {
   url: "ws://localhost:8080/",
   ws: null,
   
   init: function(){
-    chat.log("Bağlanılıyor...");
-    websocket.ws = new WebSocket(websocket.url);
-    websocket.ws.onopen = function(evt) { chat.onConnect(evt) };
-    websocket.ws.onclose = function(evt) { chat.onDisconnect(evt) };
-    websocket.ws.onmessage = function(evt) { chat.onMessage(evt) };
-    websocket.ws.onerror = function(evt) { chat.onError(evt) };
+    Chat.log("Bağlanılıyor...");
+    this.ws = new WebSocket(this.url);
+    this.ws.onopen = function(evt) { Chat.onConnect(evt) };
+    this.ws.onclose = function(evt) { Chat.onDisconnect(evt) };
+    this.ws.onmessage = function(evt) { Chat.onMessage(evt) };
+    this.ws.onerror = function(evt) { Chat.onError(evt) };
   },
 
   send: function(data){
-    if (websocket.ws != null)
-      websocket.ws.send( JSON.stringify(data) );
-  }
+    if (this.ws != null)
+      this.ws.send( JSON.stringify(data) );
+  },
 };
+
+/*
+|--------------------------
+| User List
+|--------------------------
+*/
+var UserList = {
+  users: null,
+
+  getUserById: function(id){
+    for (var i = 0; i < this.users.length; i++) {
+      if (this.users[i].id == id)
+        return this.users[i];
+    };
+    return null;
+  },
+
+  init: function(users){
+    this.users = users; // users arrayini güncelle
+    $("#active-users ul").html(""); // listeyi temizle
+
+    this.users.forEach(function(user){ // userları listeye ekle
+      var tpl = "";
+      tpl += '<li class="list-group-item" data-user-id="'+user.id+'" id="user-'+user.id+'">';
+      tpl += '<span>'+user.name+'</span>';
+      tpl += '</li>';
+
+      // online durumu
+      $tpl = $(tpl);
+      if (user.status)
+        $tpl.addClass("online");
+
+      $("#active-users ul").append( $tpl );
+    });
+  },
+
+  update: function(users){
+    this.init(users);
+  },
+
+  // delete: function(user){
+  //   for (var i = 0; i < this.users.length; i++) {
+  //     if (this.users[i].id == user.id)
+  //       this.users.splice( i, 1 );
+  //   };
+  // },
+}
 
 /*
 |--------------------------
@@ -140,6 +194,6 @@ var websocket = {
 |--------------------------
 */
 $(function(){
-  websocket.init();
-  chat.init();
+  Websocket.init();
+  Chat.init();
 });
