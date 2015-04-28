@@ -2,6 +2,9 @@
 
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
+use Chat\Client;
+use Chat\User;
+use Log;
 
 class ChatServer implements MessageComponentInterface
 {
@@ -11,36 +14,99 @@ class ChatServer implements MessageComponentInterface
     $this->clients = new \SplObjectStorage;
   }
 
-  public function onOpen(ConnectionInterface $conn) {
-    // Store the new connection to send messages to later
-    $this->clients->attach($conn);
+  /*
+  |--------------------------------------------------------------------------
+  | Yeni kullanıcı bağlandığında
+  |--------------------------------------------------------------------------
+  */
+  public function onOpen(ConnectionInterface $socket) {
+    // Kullanıcıyı listeye kaydet
+    $client = new Client($socket);
+    $this->clients->attach($client);
 
-    echo "New connection! ({$conn->resourceId})\n";
+    echo "New connection! ({$socket->resourceId})\n";
   }
 
-  public function onMessage(ConnectionInterface $from, $msg) {
-    $numRecv = count($this->clients) - 1;
-    echo sprintf('Connection %d sending message "%s" to %d other connection%s' . "\n"
-        , $from->resourceId, $msg, $numRecv, $numRecv == 1 ? '' : 's');
+  /*
+  |--------------------------------------------------------------------------
+  | Kullanıcıdan mesaj geldiğinde
+  |--------------------------------------------------------------------------
+  */
+  public function onMessage(ConnectionInterface $socket, $data) {
+    // mesaj gönderen client'i bul
+    $sender = $this->findClientByConnection($socket);
 
-    foreach ($this->clients as $client) {
-      if ($from !== $client) {
-        // The sender is not the receiver, send to each client connected
-        $client->send($msg);
-      }
+    // mesaj içeriğini al
+    $msg = json_decode($data);
+
+    if (!$msg) return; // mesaj boşsa çık
+    if (!isset($msg->topic)) return; // mesaj başlığı yoksa çık
+
+    // mesaj başlığına göre işlem yapılacak
+    switch ($msg->topic) {
+      
+      // login bildirimi
+      case 'login':
+        echo "Login mesajı geldi.\n";
+        try {
+          $user = User::findOrFail($msg->data->user_id);
+          $sender->user = $user;
+          echo "User {$user->name} bağlandı.\n";
+        } catch (Exception $e) {
+          echo "User not found\n";
+        }
+        break;
+
+      // kullanıcıdan gelen mesaj
+      case 'message':
+        echo "Mesaj geldi.\n";
+        // login olmuş kullanıcılara gelen mesajı ilet
+        foreach ($this->clients as $client) {
+          if ($client->isLoggedIn())
+            $client->socket->send( $data );
+        }
+        break;
+      
+      default:
+        break;
     }
   }
 
-  public function onClose(ConnectionInterface $conn) {
-    // The connection is closed, remove it, as we can no longer send it messages
-    $this->clients->detach($conn);
-
-    echo "Connection {$conn->resourceId} has disconnected\n";
+  /*
+  |--------------------------------------------------------------------------
+  | Kullanıcı çıktığında
+  |--------------------------------------------------------------------------
+  */
+  public function onClose(ConnectionInterface $socket) {
+    // Bağlantı kesildiğinden kullanıcıyı listeden çıkarabiliriz.
+    $user = $this->findClientByConnection($socket);
+    if ($user) {
+      $this->clients->detach($user);
+      echo "Connection {$socket->resourceId} has disconnected\n";
+    }
   }
 
-  public function onError(ConnectionInterface $conn, \Exception $e) {
+  /*
+  |--------------------------------------------------------------------------
+  | Hata oluştuğunda
+  |--------------------------------------------------------------------------
+  */
+  public function onError(ConnectionInterface $socket, \Exception $e) {
+    Log::error( $e );
     echo "An error has occurred: {$e->getMessage()}\n";
+    $socket->close();
+  }
 
-    $conn->close();
+  /*
+  |--------------------------------------------------------------------------
+  | Socket'e göre User'ı bul 
+  |--------------------------------------------------------------------------
+  */
+  public function findClientByConnection(ConnectionInterface $socket)
+  {
+    foreach ($this->clients as $client)
+      if ($client->socket == $socket)
+        return $client;
+    return null;
   }
 }

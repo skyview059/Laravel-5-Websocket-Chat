@@ -1,0 +1,15 @@
+#messages {
+  margin-bottom: 10px
+}
+#messages .message {
+  background-color: #EFEFEF;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+#messages .message:nth-child(even) {
+  background-color: #F7F7F7;  
+}
+#messages .sender, #messages .content {
+  display: inline-block;
+}
