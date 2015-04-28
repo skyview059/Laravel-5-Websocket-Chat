@@ -76,10 +76,13 @@ var chat = {
       },
     }
     websocket.send( message );
+
+    chat.log("Bağlanıldı !");
   },
 
   // server ile bağlantı koptuğunda
   onDisconnect: function(event){
+    chat.log("Bağlantı kesildi !");
   },
 
   // serverdan mesaj geldiğinde
@@ -103,7 +106,7 @@ var chat = {
 
   // bağlantıda hata oluştuğunda
   onError: function(event){
-    this.log("Hata oluştu.");
+    console.log(event);
   },
 };
 

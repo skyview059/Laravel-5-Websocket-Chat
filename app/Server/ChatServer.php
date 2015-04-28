@@ -1,5 +1,6 @@
 <?php namespace Chat\Server;
 
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use Chat\Client;
@@ -16,6 +17,17 @@ class ChatServer implements MessageComponentInterface
 
   /*
   |--------------------------------------------------------------------------
+  | Konsola renkli mesaj yazdır
+  |--------------------------------------------------------------------------
+  */
+  public function console($message, $type = "info")
+  {
+    $output = new ConsoleOutput();
+    $output->writeln("<{$type}>{$message}</{$type}>");
+  }
+
+  /*
+  |--------------------------------------------------------------------------
   | Yeni kullanıcı bağlandığında
   |--------------------------------------------------------------------------
   */
@@ -24,7 +36,7 @@ class ChatServer implements MessageComponentInterface
     $client = new Client($socket);
     $this->clients->attach($client);
 
-    echo "New connection! ({$socket->resourceId})\n";
+    $this->console("Yeni bağlantı! ({$socket->resourceId})");
   }
 
   /*
@@ -47,19 +59,18 @@ class ChatServer implements MessageComponentInterface
       
       // login bildirimi
       case 'login':
-        echo "Login mesajı geldi.\n";
+        $this->console("Login mesajı geldi.", "comment");
         try {
           $user = User::findOrFail($msg->data->user_id);
           $sender->user = $user;
-          echo "User {$user->name} bağlandı.\n";
+          $this->console("User {$user->name} bağlandı.");
         } catch (Exception $e) {
-          echo "User not found\n";
+          $this->console("User bulunamadı", "error");
         }
         break;
 
       // kullanıcıdan gelen mesaj
       case 'message':
-        echo "Mesaj geldi.\n";
         // login olmuş kullanıcılara gelen mesajı ilet
         foreach ($this->clients as $client) {
           if ($client->isLoggedIn())
@@ -82,7 +93,7 @@ class ChatServer implements MessageComponentInterface
     $user = $this->findClientByConnection($socket);
     if ($user) {
       $this->clients->detach($user);
-      echo "Connection {$socket->resourceId} has disconnected\n";
+      $this->console("Bağlantı {$socket->resourceId} çıkış yaptı.", "error");
     }
   }
 
@@ -93,7 +104,7 @@ class ChatServer implements MessageComponentInterface
   */
   public function onError(ConnectionInterface $socket, \Exception $e) {
     Log::error( $e );
-    echo "An error has occurred: {$e->getMessage()}\n";
+    $this->console("An error has occurred: {$e->getMessage()}", "error");
     $socket->close();
   }
 
