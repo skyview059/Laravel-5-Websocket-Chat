@@ -149,7 +149,6 @@ class ChatServer implements MessageComponentInterface
       $to->send( $message );
     else{
       // herkese gonder
-      $this->console( "Herkese gönderiliyor !!" , "error" );
       foreach ($this->clients as $client) {
         if ($client->isLoggedIn())
           $client->send( $message );
