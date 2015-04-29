@@ -15,7 +15,7 @@
 #messages .sender, #messages .content {
   display: inline-block;
 }
-#active-users SPAN:before {
+#active-users .name:before {
   content: '';
   display: inline-block;
   width: 10px;
@@ -32,11 +32,13 @@
 #active-users LI {
   cursor: pointer;
 }
-#active-users LI.online SPAN:before {
+#active-users LI.online .name:before {
   background-color: #87D21A;
 }
-/*.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus
-{
-  background-color: lime;
-  border-color: lime;
-}*/
+#active-users .badge:empty {
+  display: none;
+}
+#active-users .badge {
+  background-color: #3AAAD2;
+  padding: 7px 10px;
+}

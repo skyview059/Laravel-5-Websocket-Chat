@@ -50,8 +50,14 @@ var Chat = {
     },
 
     addMessage: function(data){
-      // konuşma penceresi açık değilse iptal et
+      // konuşma penceresi açık değilse
       if (data.from_id != Chat.active_user_id && data.to_id != Chat.active_user_id) {
+        // sağ listeden mesaj sayısını güncelle
+        $listItem = $("#user-"+data.from_id).find(".badge");
+        var count = parseInt($listItem.text() || 0);
+        $listItem.html( ++count );
+
+        // ekrana yazdırmadan çık
         return;
       }
 
@@ -88,8 +94,11 @@ var Chat = {
       Chat.getMessages( id ); // konuşma geçmişini al
 
       // pencere başlığını güncelle
-      var title = $(this).find("span").text();
+      var title = $(this).find(".name").text();
       $("#chat-name").html( title );
+
+      // okunmamış mesaj sayısını sıfırla
+      $("#user-"+id).find(".badge").html("");
     });
   },
 
@@ -230,7 +239,8 @@ var UserList = {
     this.users.forEach(function(user){ // userları listeye ekle
       var tpl = "";
       tpl += '<li class="list-group-item" data-user-id="'+user.id+'" id="user-'+user.id+'">';
-      tpl += '<span>'+user.name+'</span>';
+      tpl += '<span class="name">'+user.name+'</span>';
+      tpl += '<span class="badge"></span>';
       tpl += '</li>';
 
       // online durumu

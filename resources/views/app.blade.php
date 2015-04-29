@@ -11,7 +11,7 @@
 @section('content')
 <div class="container">
 	<div class="row">
-		<div class="col-xs-9">
+		<div class="col-xs-8 col-md-9">
 			<div class="panel panel-default">
 				<div class="panel-heading">
 					<span id="chat-name">Chat</span>
@@ -23,7 +23,7 @@
 				</div>
 			</div><!-- .panel -->
 		</div><!-- .col-9 -->
-		<div class="col-xs-3">
+		<div class="col-xs-4 col-md-3">
 			<div id="active-users">
 				<ul class="list-group groups">
 					<li class="list-group-item" data-group-id="1" id="group-1"><span>Genel</span></li>
