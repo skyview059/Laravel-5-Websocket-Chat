@@ -83,11 +83,17 @@ var Chat = {
     Websocket.send( message );
 
     Chat.log("Bağlanıldı !");
+
+    // yeşil renk yak
+    $("#active-users .groups li").addClass("online");
   },
 
   // server ile bağlantı koptuğunda
   onDisconnect: function(event){
     Chat.log("Bağlantı kesildi !");
+
+    // kırmızı renk yak
+    $("#active-users li").removeClass("online");
   },
 
   // serverdan mesaj geldiğinde

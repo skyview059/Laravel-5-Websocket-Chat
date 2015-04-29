@@ -26,7 +26,7 @@
 		<div class="col-xs-3">
 			<div id="active-users">
 				<ul class="list-group groups">
-					<li class="list-group-item online" data-group-id="1" id="group-1"><span>Genel</span></li>
+					<li class="list-group-item" data-group-id="1" id="group-1"><span>Genel</span></li>
 				</ul>
 				<ul class="list-group users"></ul>
 			</div><!-- .active-userss -->
