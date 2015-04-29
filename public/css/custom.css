@@ -1,5 +1,7 @@
 #messages {
   margin-bottom: 10px;
+  height: auto;
+  overflow: auto;
 }
 #messages .message {
   background-color: #EFEFEF;
@@ -27,6 +29,14 @@
   margin-right: 7px;
   vertical-align: middle;
 }
+#active-users LI {
+  cursor: pointer;
+}
 #active-users LI.online SPAN:before {
   background-color: #87D21A;
 }
+/*.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus
+{
+  background-color: lime;
+  border-color: lime;
+}*/

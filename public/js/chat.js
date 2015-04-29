@@ -21,18 +21,23 @@ var Chat = {
       if (event.keyCode == 13)
         Chat.send();
     });
+
+    // Mesaj input'una focus yap
+    $("#message").focus();
   },
 
   // Konsola mesaj yazdır
-  log: function(message, sender){
+  log: function(message, sender, date){
     if (!sender) sender = "Server";
+    if (!date) date = moment();
+    else date = moment(date);
 
     // konsol mesajını oluştur
     var tpl = '';
     tpl += '<div class="message">';
     tpl += '<div class="sender"><strong><mark>'+sender+'</mark></strong></div>';
     tpl += '<div class="content">'+message+'</div>';
-    tpl += '<div class="date text-muted"><small class="timeago" title="'+(moment().toISOString())+'"></small></div>';
+    tpl += '<div class="date text-muted"><small class="timeago" title="'+(date.toISOString())+'"></small></div>';
     tpl += '</div>';
 
     $("#messages").append( tpl );
@@ -52,10 +57,10 @@ var Chat = {
 
     // mesajı gönder
     message = {
-      topic: 'message',
+      topic: 'new_message',
       data: {
-        sender: Chat.user_id,
-        content: message
+        to_id: null,
+        message: message
       }
     }
     Websocket.send( message );
@@ -90,15 +95,22 @@ var Chat = {
     var message = JSON.parse(event.data);
     
     switch(message.topic) {
-      // kullanıcıdan mesaj var
-      case 'message':
-        var sender = UserList.getUserById( message.data.sender );
-        console.log(sender);
+      // gelen mesajları yazdır
+      case 'messages':
+        for (var i = message.data.length - 1; i >= 0; i--) {
+          // gönderen kullanıcı adını bul
+          var from = UserList.getUserById( message.data[i].from_id );
+          if (!from) from = message.data[i].from_id;
+          else from = from.name;
 
-        if (!sender) sender = message.data.sender;
-        else sender = sender.name;
+          // konsola yazdır
+          this.log( message.data[i].message, from, message.data[i].created_at );
+        };
 
-        this.log( message.data.content, sender );
+        // en alta scroll yap
+        var messagesDiv = document.getElementById("messages");
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
         break;
 
       // kullanıcı listesini al
@@ -159,7 +171,7 @@ var UserList = {
 
   init: function(users){
     this.users = users; // users arrayini güncelle
-    $("#active-users ul").html(""); // listeyi temizle
+    $("#active-users ul.users").html(""); // listeyi temizle
 
     this.users.forEach(function(user){ // userları listeye ekle
       var tpl = "";
@@ -172,7 +184,7 @@ var UserList = {
       if (user.status)
         $tpl.addClass("online");
 
-      $("#active-users ul").append( $tpl );
+      $("#active-users ul.users").append( $tpl );
     });
   },
 
@@ -193,7 +205,14 @@ var UserList = {
 | Init
 |--------------------------
 */
+function resized () {
+  $("#messages").height( $(window).height() - 250 );
+}
 $(function(){
   Websocket.init();
   Chat.init();
+  resized();
+  $(window).resize(function(){
+    resized();
+  });
 });

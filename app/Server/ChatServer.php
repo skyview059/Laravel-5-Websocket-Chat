@@ -5,6 +5,7 @@ use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use Chat\Client;
 use Chat\User;
+use Chat\Message;
 use Log;
 
 class ChatServer implements MessageComponentInterface
@@ -73,18 +74,39 @@ class ChatServer implements MessageComponentInterface
           // bağlı kullanıcıların listesini gönder
           $this->sendUsersList();
 
+          // genel mesaj geçmişini gönder
+          $this->sendMessageLogTo( $sender );
+
         } catch (Exception $e) {
           $this->console("User bulunamadı", "error");
         }
         break;
 
       // kullanıcıdan gelen mesaj
-      case 'message':
+      case 'new_message':
+        
+        // mesaj geçmişine kaydet
+        $message = Message::create([
+          'from_id' => $sender->user->id,
+          'to_id'   => $msg->data->to_id,
+          'message' => $msg->data->message
+        ]);
+
         // login olmuş kullanıcılara gelen mesajı ilet
-        foreach ($this->clients as $client) {
-          if ($client->isLoggedIn())
-            $client->send( $data );
-        }
+        if ($msg->data->to_id == null)
+          foreach ($this->clients as $client) {
+            if ($client->isLoggedIn())
+              $client->send([
+                'topic' => 'messages',
+                'data'  => [$message]
+              ]);
+          }
+        else
+          $this->findClientByUserId( $msg->data->to_id )->send([
+            'topic' => 'messages',
+            'data'  => [$message]
+          ]);
+
         break;
       
       default:
@@ -136,14 +158,17 @@ class ChatServer implements MessageComponentInterface
     return null;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Kullanıcı listelerini gönder
+  |--------------------------------------------------------------------------
+  */
   public function sendUsersList( $to = null )
   {
     $users = User::orderBy('status', 'desc')->orderBy('name', 'asc')->get();
     
     $message['topic'] = 'users';
-    foreach ($users as $user) {
-      $message['data']['users'][] = $user;
-    }
+    $message['data']['users'] = $users;
 
     if ($to)
       $to->send( $message );
@@ -154,6 +179,27 @@ class ChatServer implements MessageComponentInterface
           $client->send( $message );
       }
     }
+  }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Belirtilen ID'li kullanıcılar arasındaki mesajları bul
+  | $with alanı Null girilirse genel gönderilen mesajları bulur
+  |--------------------------------------------------------------------------
+  */
+  public function sendMessageLogTo( $to, $with_id = null )
+  {
+    if ($with_id) {
+      $ids = [$with_id, $to->user->id];
+      $messages = Message::ofWith( $ids );
+    }else
+      $messages = Message::ofWith();
+
+    $messages = $messages->latestFirst()->take(50)->get()->toArray();
+
+    $message['topic'] = 'messages';
+    $message['data'] = $messages;
+
+    $to->send( $message );
   }
 }
