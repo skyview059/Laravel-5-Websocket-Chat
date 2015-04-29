@@ -1,6 +1,7 @@
 <?php namespace Chat;
 
 use Illuminate\Database\Eloquent\Model;
+use Log;
 
 class Message extends Model {
 
@@ -24,11 +25,13 @@ class Message extends Model {
       return $query->whereNull('to_id');
       
     // iki kişi arasındaki mesajları getir
-    foreach ($ids as $id) {
-      return $query->where(function($q) use ($id){
-        $q->orWhere('to_id', $id)->orWhere('from_id', $id);
+    return $query
+      ->orWhere(function($q) use ($ids){
+        $q->where('to_id', $ids[0])->where('from_id', $ids[1]);
+      })
+      ->orWhere(function($q) use ($ids){
+        $q->where('to_id', $ids[1])->where('from_id', $ids[0]);
       });
-    }
   }
 
   public function scopeLatestFirst($query)

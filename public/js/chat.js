@@ -5,16 +5,70 @@
 */
 var Chat = {
   // degiskenler
-  user_id: null,
+  user_id: null,        // login olunan user id
+  active_user_id: null, // konuşma penceresi açık olan user id
 
-  // konsol mesajlarını yenile
-  console_refresh: function(){
-    $("#messages .timeago").timeago();
+  // ----------------------------
+  Console: {
+    // konsolu yenile
+    refresh: function(){
+      $("#messages .timeago").timeago(); // tarihleri düzelt
+    },
+
+    // Konsola mesaj yazdır
+    log: function(message, sender, date){
+      if (!sender) sender = "Server";
+      if (!date) date = moment();
+      else date = moment(date);
+
+      // konsol mesajını oluştur
+      var tpl = '';
+      tpl += '<div class="message">';
+      tpl += '<div class="sender"><strong><mark>'+sender+'</mark></strong></div>';
+      tpl += '<div class="content">'+message+'</div>';
+      tpl += '<div class="date text-muted"><small class="timeago" title="'+(date.toISOString())+'"></small></div>';
+      tpl += '</div>';
+
+      $("#messages").append( tpl );
+      Chat.Console.refresh();
+    },
+    
+    // Konsolu temizle
+    clear: function(){
+      $("#messages").html("");
+    },
+
+    // En alta scroll yap
+    scroll: function(){
+      var messagesDiv = document.getElementById("messages");
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    },
+
+    // input'daki mesajı temizle
+    clearInput: function(){
+      $("#message").val("");
+    },
+
+    addMessage: function(data){
+      // konuşma penceresi açık değilse iptal et
+      if (data.from_id != Chat.active_user_id && data.to_id != Chat.active_user_id) {
+        return;
+      }
+
+      // gönderen kullanıcı adını bul
+      var from = UserList.getUserById( data.from_id );
+      if (!from) from = data.from_id;
+      else from = from.name;
+
+      // konsola yazdır
+      Chat.Console.log( data.message, from, data.created_at );
+    },
   },
+  // ----------------------------
 
   init: function(){
     this.user_id = $("#user_id").val();
-    this.console_refresh();
+    this.Console.refresh();
 
     // Enter'a basıldığında mesaj gönder
     $("#message").on("keydown", function(event){
@@ -24,24 +78,30 @@ var Chat = {
 
     // Mesaj input'una focus yap
     $("#message").focus();
+
+    // Kullanıcıya tıklandığında mesaj geçmişini sunucudan iste
+    $("#active-users").on("click", "li", function(){
+      var id = $(this).data("user-id");
+      
+      Chat.Console.clear(); // ekranı temizle
+      Chat.active_user_id = id; // aktif user'ı güncelle
+      Chat.getMessages( id ); // konuşma geçmişini al
+
+      // pencere başlığını güncelle
+      var title = $(this).find("span").text();
+      $("#chat-name").html( title );
+    });
   },
 
-  // Konsola mesaj yazdır
-  log: function(message, sender, date){
-    if (!sender) sender = "Server";
-    if (!date) date = moment();
-    else date = moment(date);
-
-    // konsol mesajını oluştur
-    var tpl = '';
-    tpl += '<div class="message">';
-    tpl += '<div class="sender"><strong><mark>'+sender+'</mark></strong></div>';
-    tpl += '<div class="content">'+message+'</div>';
-    tpl += '<div class="date text-muted"><small class="timeago" title="'+(date.toISOString())+'"></small></div>';
-    tpl += '</div>';
-
-    $("#messages").append( tpl );
-    this.console_refresh();
+  // Serverdan mesaj geçmişini iste
+  getMessages: function(with_id){
+    var message = {
+      'topic': 'request',
+      'data': {
+        'with_id': with_id
+      },
+    };
+    Websocket.send( message );
   },
 
   // Servera mesaj gönder
@@ -49,7 +109,7 @@ var Chat = {
     // mesaj parametre olarak girilmemişse input'dan al
     if (!message) {
       message = $("#message").val();
-      Chat.clearInput();
+      Chat.Console.clearInput();
     }
     
     // mesaj yoksa iptal et
@@ -59,16 +119,11 @@ var Chat = {
     message = {
       topic: 'new_message',
       data: {
-        to_id: null,
+        to_id: Chat.active_user_id,
         message: message
       }
-    }
+    };
     Websocket.send( message );
-  },
-
-  // input'daki mesajı temizle
-  clearInput: function(){
-    $("#message").val("");
   },
 
   // servera bağlanıldığında
@@ -82,7 +137,7 @@ var Chat = {
     }
     Websocket.send( message );
 
-    Chat.log("Bağlanıldı !");
+    Chat.Console.log("Bağlanıldı !");
 
     // yeşil renk yak
     $("#active-users .groups li").addClass("online");
@@ -90,7 +145,7 @@ var Chat = {
 
   // server ile bağlantı koptuğunda
   onDisconnect: function(event){
-    Chat.log("Bağlantı kesildi !");
+    Chat.Console.log("Bağlantı kesildi !");
 
     // kırmızı renk yak
     $("#active-users li").removeClass("online");
@@ -101,22 +156,15 @@ var Chat = {
     var message = JSON.parse(event.data);
     
     switch(message.topic) {
+      
       // gelen mesajları yazdır
       case 'messages':
         for (var i = message.data.length - 1; i >= 0; i--) {
-          // gönderen kullanıcı adını bul
-          var from = UserList.getUserById( message.data[i].from_id );
-          if (!from) from = message.data[i].from_id;
-          else from = from.name;
-
-          // konsola yazdır
-          this.log( message.data[i].message, from, message.data[i].created_at );
+          Chat.Console.addMessage(message.data[i]);
         };
 
         // en alta scroll yap
-        var messagesDiv = document.getElementById("messages");
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
+        Chat.Console.scroll();
         break;
 
       // kullanıcı listesini al
@@ -145,7 +193,7 @@ var Websocket = {
   ws: null,
   
   init: function(){
-    Chat.log("Bağlanılıyor...");
+    Chat.Console.log("Bağlanılıyor...");
     this.ws = new WebSocket(this.url);
     this.ws.onopen = function(evt) { Chat.onConnect(evt) };
     this.ws.onclose = function(evt) { Chat.onDisconnect(evt) };
@@ -197,13 +245,6 @@ var UserList = {
   update: function(users){
     this.init(users);
   },
-
-  // delete: function(user){
-  //   for (var i = 0; i < this.users.length; i++) {
-  //     if (this.users[i].id == user.id)
-  //       this.users.splice( i, 1 );
-  //   };
-  // },
 }
 
 /*
@@ -217,6 +258,7 @@ function resized () {
 $(function(){
   Websocket.init();
   Chat.init();
+
   resized();
   $(window).resize(function(){
     resized();

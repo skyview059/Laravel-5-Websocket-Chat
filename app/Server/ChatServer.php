@@ -86,6 +86,9 @@ class ChatServer implements MessageComponentInterface
         // kullanıcıdan gelen mesaj
         case 'new_message':
           
+          // Gönderlen kişi alanı boşsa null yap.
+          if (!@$msg->data->to_id) $msg->data->to_id = null;
+
           // mesaj geçmişine kaydet
           $message = Message::create([
             'from_id' => $sender->user->id,
@@ -102,12 +105,28 @@ class ChatServer implements MessageComponentInterface
                   'data'  => [$message]
                 ]);
             }
-          else
-            $this->findClientByUserId( $msg->data->to_id )->send([
-              'topic' => 'messages',
-              'data'  => [$message]
-            ]);
+          else {
+            // iki kişi arasında özel mesaj
+            $to_client = $this->findClientByUserId( $msg->data->to_id );
+            if ($to_client) {
+              $to_client->send([
+                'topic' => 'messages',
+                'data'  => [$message]
+              ]);
+              $sender->send([
+                'topic' => 'messages',
+                'data'  => [$message]
+              ]);
+            }
+            else
+              $this->console( "User Bulunamadı ({$msg->data->to_id}) !!", "error" );
+          }
 
+          break;
+
+        // kullanıcı mesaj geçmişini istediğinde
+        case 'request':
+          $this->sendMessageLogTo($sender, @$msg->data->with_id ?: null );
           break;
         
         default:
