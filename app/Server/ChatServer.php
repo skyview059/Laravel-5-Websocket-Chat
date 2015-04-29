@@ -49,68 +49,73 @@ class ChatServer implements MessageComponentInterface
   |--------------------------------------------------------------------------
   */
   public function onMessage(ConnectionInterface $socket, $data) {
-    // mesaj gönderen client'i bul
-    $sender = $this->findClientByConnection($socket);
+    try {
+      // mesaj gönderen client'i bul
+      $sender = $this->findClientByConnection($socket);
 
-    // mesaj içeriğini al
-    $msg = json_decode($data);
+      // mesaj içeriğini al
+      $msg = json_decode($data);
 
-    if (!$msg) return; // mesaj boşsa çık
-    if (!isset($msg->topic)) return; // mesaj başlığı yoksa çık
+      if (!$msg) return; // mesaj boşsa çık
+      if (!isset($msg->topic)) return; // mesaj başlığı yoksa çık
 
-    // mesaj başlığına göre işlem yapılacak
-    switch ($msg->topic) {
-      
-      // login bildirimi
-      case 'login':
-        $this->console("Login mesajı geldi.", "comment");
-        try {
-          // user'ı bul
-          $user = User::findOrFail($msg->data->user_id);
-          $sender->user = $user;
-          $sender->user->setOnline();
-          $this->console("User {$user->name} bağlandı.");
-
-          // bağlı kullanıcıların listesini gönder
-          $this->sendUsersList();
-
-          // genel mesaj geçmişini gönder
-          $this->sendMessageLogTo( $sender );
-
-        } catch (Exception $e) {
-          $this->console("User bulunamadı", "error");
-        }
-        break;
-
-      // kullanıcıdan gelen mesaj
-      case 'new_message':
+      // mesaj başlığına göre işlem yapılacak
+      switch ($msg->topic) {
         
-        // mesaj geçmişine kaydet
-        $message = Message::create([
-          'from_id' => $sender->user->id,
-          'to_id'   => $msg->data->to_id,
-          'message' => $msg->data->message
-        ]);
+        // login bildirimi
+        case 'login':
+          $this->console("Login mesajı geldi.", "comment");
+          try {
+            // user'ı bul
+            $user = User::findOrFail($msg->data->user_id);
+            $sender->user = $user;
+            $sender->user->setOnline();
+            $this->console("User {$user->name} bağlandı.");
 
-        // login olmuş kullanıcılara gelen mesajı ilet
-        if ($msg->data->to_id == null)
-          foreach ($this->clients as $client) {
-            if ($client->isLoggedIn())
-              $client->send([
-                'topic' => 'messages',
-                'data'  => [$message]
-              ]);
+            // bağlı kullanıcıların listesini gönder
+            $this->sendUsersList();
+
+            // genel mesaj geçmişini gönder
+            $this->sendMessageLogTo( $sender );
+
+          } catch (Exception $e) {
+            $this->console("User bulunamadı", "error");
           }
-        else
-          $this->findClientByUserId( $msg->data->to_id )->send([
-            'topic' => 'messages',
-            'data'  => [$message]
+          break;
+
+        // kullanıcıdan gelen mesaj
+        case 'new_message':
+          
+          // mesaj geçmişine kaydet
+          $message = Message::create([
+            'from_id' => $sender->user->id,
+            'to_id'   => $msg->data->to_id,
+            'message' => $msg->data->message
           ]);
 
-        break;
-      
-      default:
-        break;
+          // login olmuş kullanıcılara gelen mesajı ilet
+          if ($msg->data->to_id == null)
+            foreach ($this->clients as $client) {
+              if ($client->isLoggedIn())
+                $client->send([
+                  'topic' => 'messages',
+                  'data'  => [$message]
+                ]);
+            }
+          else
+            $this->findClientByUserId( $msg->data->to_id )->send([
+              'topic' => 'messages',
+              'data'  => [$message]
+            ]);
+
+          break;
+        
+        default:
+          break;
+      }
+    } catch (Exception $e) {
+      $this->console($e->getMessage(), "error");
+      Log::info($e);
     }
   }
 
@@ -123,9 +128,9 @@ class ChatServer implements MessageComponentInterface
     // Bağlantı kesildiğinden kullanıcıyı listeden çıkarabiliriz.
     $client = $this->findClientByConnection($socket);
     if ($client) {
-      if ($client->isLoggedIn()) {
+      if ($client->isLoggedIn()) 
         $client->user->setOffline();
-      }
+
       $this->clients->detach($client);
       $this->console("Bağlantı {$socket->resourceId} çıkış yaptı.", "error");
     }
@@ -174,17 +179,16 @@ class ChatServer implements MessageComponentInterface
       $to->send( $message );
     else{
       // herkese gonder
-      foreach ($this->clients as $client) {
+      foreach ($this->clients as $client)
         if ($client->isLoggedIn())
           $client->send( $message );
-      }
     }
   }
 
   /*
   |--------------------------------------------------------------------------
   | Belirtilen ID'li kullanıcılar arasındaki mesajları bul
-  | $with alanı Null girilirse genel gönderilen mesajları bulur
+  | $with_id alanı Null girilirse genel gönderilen mesajları bulur
   |--------------------------------------------------------------------------
   */
   public function sendMessageLogTo( $to, $with_id = null )
@@ -201,5 +205,18 @@ class ChatServer implements MessageComponentInterface
     $message['data'] = $messages;
 
     $to->send( $message );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | User ID'ye göre socket client bul
+  |--------------------------------------------------------------------------
+  */
+  public function findClientByUserId( $user_id )
+  {
+    foreach ($this->clients as $client)
+      if ($client->isLoggedIn() && $client->user->id == $user_id)
+        return $client;
+    return null;
   }
 }
