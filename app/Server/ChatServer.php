@@ -108,16 +108,15 @@ class ChatServer implements MessageComponentInterface
           else {
             // iki kişi arasında özel mesaj
             $to_client = $this->findClientByUserId( $msg->data->to_id );
-            if ($to_client) {
+            $sender->send([
+              'topic' => 'messages',
+              'data'  => [$message]
+            ]);
+            if ($to_client)
               $to_client->send([
                 'topic' => 'messages',
                 'data'  => [$message]
               ]);
-              $sender->send([
-                'topic' => 'messages',
-                'data'  => [$message]
-              ]);
-            }
             else
               $this->console( "User Bulunamadı ({$msg->data->to_id}) !!", "error" );
           }
