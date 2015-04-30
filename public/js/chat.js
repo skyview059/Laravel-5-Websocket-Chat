@@ -23,11 +23,11 @@ var Chat = {
 
       // konsol mesajını oluştur
       var tpl = '';
-      tpl += '<div class="message">';
-      tpl += '<div class="sender"><strong><mark>'+sender+'</mark></strong></div>';
+      tpl += '<div class="message"><div class="message-wrapper">';
+      tpl += '<div class="sender">'+sender+'</div>';
       tpl += '<div class="content">'+message+'</div>';
       tpl += '<div class="date text-muted"><small class="timeago" title="'+(date.toISOString())+'"></small></div>';
-      tpl += '</div>';
+      tpl += '</div></div>';
 
       $("#messages").append( tpl );
       Chat.Console.refresh();

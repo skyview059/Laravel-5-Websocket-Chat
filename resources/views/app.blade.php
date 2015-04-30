@@ -12,7 +12,7 @@
 <div class="container">
 	<div class="row">
 		<div class="col-xs-8 col-md-9">
-			<div class="panel panel-default">
+			<div class="panel panel-success">
 				<div class="panel-heading">
 					<span id="chat-name">Chat</span>
 				</div>
@@ -26,7 +26,7 @@
 		<div class="col-xs-4 col-md-3">
 			<div id="active-users">
 				<ul class="list-group groups">
-					<li class="list-group-item" data-group-id="1" id="group-1"><span>Genel</span></li>
+					<li class="list-group-item" data-group-id="1" id="group-1"><span class="name">Genel</span></li>
 				</ul>
 				<ul class="list-group users"></ul>
 			</div><!-- .active-userss -->
