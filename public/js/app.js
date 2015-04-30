@@ -266,8 +266,8 @@ function resized () {
   $("#messages").height( $(window).height() - 250 );
 }
 $(function(){
-  Websocket.init();
   Chat.init();
+  Websocket.init();
 
   resized();
   $(window).resize(function(){
