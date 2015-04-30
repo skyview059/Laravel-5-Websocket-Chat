@@ -245,7 +245,7 @@ var UserList = {
 
       // online durumu
       $tpl = $(tpl);
-      if (user.status)
+      if (parseInt(user.status) === 1)
         $tpl.addClass("online");
 
       $("#active-users ul.users").append( $tpl );
