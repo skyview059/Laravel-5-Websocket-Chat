@@ -9,6 +9,7 @@ use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use Chat\Server\ChatServer;
 use Chat\User;
+use DB;
 
 class Start extends Command {
 
@@ -22,6 +23,10 @@ class Start extends Command {
 
   public function fire()
   {
+    // Query logları tutulmasın
+    // Server uzun süre çalıştığında memory leak sorunu yaratır
+    DB::connection()->enableQueryLog();
+
     // Tüm userları offline yap.
     User::where('status', 1)->update(['status'=>0]);
 
