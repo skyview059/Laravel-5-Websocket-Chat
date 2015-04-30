@@ -1,10 +1,13 @@
-.panel {
+body {
+  background-color: rgb(240, 240, 240);
+}
+.panel.chat {
   -webkit-box-shadow: none;
   box-shadow: none;
   border-radius: 10px;
   overflow: hidden;
 }
-.panel-body {
+.panel.chat .panel-body {
   padding: 15px;
   background-position: bottom center;
   background-size: cover;

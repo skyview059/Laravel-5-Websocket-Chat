@@ -12,7 +12,7 @@
 <div class="container">
 	<div class="row">
 		<div class="col-xs-8 col-md-9">
-			<div class="panel panel-success">
+			<div class="panel chat panel-success">
 				<div class="panel-heading">
 					<span id="chat-name">Chat</span>
 				</div>
