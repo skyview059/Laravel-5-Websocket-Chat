@@ -32,7 +32,7 @@ class Start extends Command {
           new ChatServer()
         )
       ),
-      8080
+      env("WS_PORT")
     );
 
     $server->run();

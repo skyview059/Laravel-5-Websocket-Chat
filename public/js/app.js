@@ -198,7 +198,7 @@ var Chat = {
 |--------------------------
 */
 var Websocket = {
-  url: "ws://localhost:8080/",
+  url: WS_URL,
   ws: null,
   
   init: function(){

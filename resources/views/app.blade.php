@@ -5,7 +5,8 @@
 	<script src="{{ asset('js/moment.tr.js') }}"></script>
 	<script src="{{ asset('js/jquery.timeago.js') }}"></script>
 	<script src="{{ asset('js/jquery.timeago.tr.js') }}"></script>
-	<script src="{{ asset('js/chat.js') }}"></script>
+	<script>var WS_URL = "{{ ws_url() }}";</script>
+	<script src="{{ asset('js/app.js') }}"></script>
 @stop
 
 @section('content')
