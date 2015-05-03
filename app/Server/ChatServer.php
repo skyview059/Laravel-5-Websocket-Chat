@@ -85,41 +85,43 @@ class ChatServer implements MessageComponentInterface
 
         // kullanıcıdan gelen mesaj
         case 'new_message':
-          
-          // Gönderlen kişi alanı boşsa null yap.
-          if (!@$msg->data->to_id) $msg->data->to_id = null;
 
-          // mesaj geçmişine kaydet
-          $message = Message::create([
-            'from_id' => $sender->user->id,
-            'to_id'   => $msg->data->to_id,
-            'message' => $msg->data->message
-          ]);
+          foreach ($msg->data->to_id as $to_id) :
+            // Gönderlen kişi alanı boşsa null yap.
+            if (!@$to_id) $to_id = null;
 
-          // login olmuş kullanıcılara gelen mesajı ilet
-          if ($msg->data->to_id == null)
-            foreach ($this->clients as $client) {
-              if ($client->isLoggedIn())
-                $client->send([
-                  'topic' => 'messages',
-                  'data'  => [$message]
-                ]);
-            }
-          else {
-            // iki kişi arasında özel mesaj
-            $to_client = $this->findClientByUserId( $msg->data->to_id );
-            $sender->send([
-              'topic' => 'messages',
-              'data'  => [$message]
+            // mesaj geçmişine kaydet
+            $message = Message::create([
+              'from_id' => $sender->user->id,
+              'to_id'   => $to_id,
+              'message' => $msg->data->message
             ]);
-            if ($to_client)
-              $to_client->send([
+
+            // login olmuş kullanıcılara gelen mesajı ilet
+            if ($to_id == null)
+              foreach ($this->clients as $client) {
+                if ($client->isLoggedIn())
+                  $client->send([
+                    'topic' => 'messages',
+                    'data'  => [$message]
+                  ]);
+              }
+            else {
+              // iki kişi arasında özel mesaj
+              $to_client = $this->findClientByUserId( $to_id );
+              $sender->send([
                 'topic' => 'messages',
                 'data'  => [$message]
               ]);
-            else
-              $this->console( "User Bulunamadı ({$msg->data->to_id}) !!", "error" );
-          }
+              if ($to_client)
+                $to_client->send([
+                  'topic' => 'messages',
+                  'data'  => [$message]
+                ]);
+              else
+                $this->console( "User Bulunamadı ({$to_id}) !!", "error" );
+            }
+          endforeach;
 
           break;
 

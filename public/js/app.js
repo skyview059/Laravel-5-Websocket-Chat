@@ -7,6 +7,7 @@ var Chat = {
   // degiskenler
   user_id: null,        // login olunan user id
   active_user_id: null, // konuşma penceresi açık olan user id
+  select_mode: false,   // kişi seçme modu açık mı
 
   // ----------------------------
   Console: {
@@ -50,12 +51,13 @@ var Chat = {
     },
 
     addMessage: function(data){
-      // konuşma penceresi açık değilse
       if (data.from_id != Chat.active_user_id && data.to_id != Chat.active_user_id) {
         // sağ listeden mesaj sayısını güncelle
         $listItem = $("#user-"+data.from_id).find(".badge");
         var count = parseInt($listItem.text() || 0);
-        $listItem.html( ++count );
+
+        if (Chat.user_id != data.from_id && data.to_id != null)
+          $listItem.html( ++count );
 
         // ekrana yazdırmadan çık
         return;
@@ -89,25 +91,53 @@ var Chat = {
     $("#active-users").on("click", "li", function(){
       var id = $(this).data("user-id");
       
-      Chat.Console.clear(); // ekranı temizle
-      Chat.active_user_id = id; // aktif user'ı güncelle
-      Chat.getMessages( id ); // konuşma geçmişini al
+      // kişi seçme modu açıksa
+      if (Chat.select_mode) {
+        $(this).toggleClass("active");
+      }
+      else{
+        Chat.Console.clear(); // ekranı temizle
+        Chat.active_user_id = id; // aktif user'ı güncelle
+        Chat.getMessages( id ); // konuşma geçmişini al
 
-      // pencere başlığını güncelle
-      var title = $(this).find(".name").text();
-      $("#chat-name").html( title );
+        // pencere başlığını güncelle
+        var title = $(this).find(".name").text();
+        $("#chat-name").html( title );
 
-      // okunmamış mesaj sayısını sıfırla
-      $("#user-"+id).find(".badge").html("");
+        // okunmamış mesaj sayısını sıfırla
+        $("#user-"+id).find(".badge").html("");
+      }
     });
+
+    // Kişi Seç'e tıklandığında
+    $("#select-mode-btn").on("click", function(){
+      if (Chat.select_mode)
+        Chat.selectModeOff();
+      else
+        Chat.selectModeOn();
+    });
+  },
+
+  // Kişi seçme modunu açıp kapatır
+  selectModeOn: function(){
+    Chat.select_mode = true;
+    $("#select-mode-btn").html("İptal");
+    $("#select-mode-btn").removeClass("btn-default").addClass("btn-danger"); // buton rengini değiş
+  },
+
+  selectModeOff: function(){
+    Chat.select_mode = false;
+    $("#select-mode-btn").html("Kişi Seç");
+    $("#select-mode-btn").addClass("btn-default").removeClass("btn-danger"); // buton rengini değiş
+    $("#active-users li.active").removeClass("active"); // seçili kullanıcıları kaldır
   },
 
   // Serverdan mesaj geçmişini iste
   getMessages: function(with_id){
     var message = {
-      'topic': 'request',
+      'topic': 'request', // başlık
       'data': {
-        'with_id': with_id
+        'with_id': with_id // kimle olduğunu belirt
       },
     };
     Websocket.send( message );
@@ -124,12 +154,29 @@ var Chat = {
     // mesaj yoksa iptal et
     if (!message) return;
 
+    // kişi seçme modu açık mı
+    var to_id = [];
+    if (Chat.select_mode) {
+      // seçili kişilerin listesini al
+      $selected = $("#active-users li.active");
+      $selected.each(function(){
+        to_id[to_id.length] = $(this).data("user-id");
+      });
+      Chat.selectModeOff(); // gönderdikten sonra kişi seçme modunu kapat
+    }else{
+      // kişi seçme modu kapalı, sadece açık penceredeki kişiye gönder (veya null'sa genele)
+      to_id[to_id.length] = Chat.active_user_id;
+    }
+
+    // gönderilecek kimse yoksa
+    if (to_id.length == 0) alert("Kimseyi seçmediniz");
+
     // mesajı gönder
     message = {
-      topic: 'new_message',
-      data: {
-        to_id: Chat.active_user_id,
-        message: message
+      topic: 'new_message', // mesaj başlığı
+      data: { // mesaj datası
+        to_id: to_id, // mesajın kime gönderileceği
+        message: message // gönderilen mesaj
       }
     };
     Websocket.send( message );

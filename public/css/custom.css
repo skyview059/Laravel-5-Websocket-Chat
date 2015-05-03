@@ -1,4 +1,4 @@
-body {
+BODY {
   background-color: rgb(240, 240, 240);
 }
 .panel.chat {
@@ -48,13 +48,11 @@ body {
   background-color: white;
   padding: 7.0px;
   border-radius: 10px;
-  
   width: auto;
   max-width: 75%;
-
   border-radius: 7.5px;
   position: relative;
-  box-shadow: 0 1px .5px rgba(0,0,0,.13);
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   display: inline-block;
 }
 #messages .sender, #messages .content {
