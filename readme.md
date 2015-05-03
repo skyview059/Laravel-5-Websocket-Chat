@@ -7,7 +7,7 @@ Aşağıdaki komutları çalıştırın :
 `composer install`  
 `php artisan key:generate`  
 `php artisan migrate`  
-`php chat:start`  
+`php artisan chat:start`  
 
 ## Demo
 
